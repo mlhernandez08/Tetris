@@ -49,22 +49,68 @@ end
 
 function love.keypressed(key)
     if key == "left" then
-      pieceX = pieceX - 1
+      if canMove(pieceX - 1, pieceY, currentPiece) then
+        pieceX = pieceX - 1
+      end
     elseif key == "right" then
-      pieceX = pieceX + 1
+      if canMove(pieceX + 1, pieceY, currentPiece) then
+        pieceX = pieceX + 1
+      end
     elseif key == "down" then
-      pieceY = pieceY + 1
+      if canMove(pieceX, pieceY + 1, currentPiece) then
+        pieceY = pieceY + 1
+      else
+        lockPiece()
+      end
     elseif key == "up" then
-      rotatePiece()
-    end
-  end
-  
-  function rotatePiece()
-    local newPiece = {}
-    for y = 0, 3 do
-      for x = 0, 3 do
-        newPiece[y*4 + x + 1] = currentPiece[(3 - x)*4 + y + 1]
+      local rotated = rotate(currentPiece)
+      if canMove(pieceX, pieceY, rotated) then
+        currentPiece = rotated
       end
     end
-    currentPiece = newPiece
+  end
+
+  function rotate(shape)
+    local newShape = {}
+    for y = 0, 3 do
+      for x = 0, 3 do
+        newShape[y * 4 + x + 1] = shape[(3 - x) * 4 + y + 1]
+      end
+    end
+    return newShape
+  end
+
+  function lockPiece()
+    for i = 0, 15 do
+      if currentPiece[i + 1] == 1 then
+        local x = pieceX + (i % 4)
+        local y = pieceY + math.floor(i / 4)
+        if y >= 0 then
+          field[y + 1][x + 1] = 1
+        end
+      end
+    end
+  
+    -- Spawn a new piece
+    spawnPiece()
+  end
+
+  function canMove(newX, newY, shape)
+    for i = 0, 15 do
+      if shape[i + 1] == 1 then
+        local x = newX + (i % 4)
+        local y = newY + math.floor(i / 4)
+  
+        -- Check if it's outside the field boundaries
+        if x < 0 or x >= fieldWidth or y >= fieldHeight then
+          return false
+        end
+  
+        -- Check if it's colliding with something in the field
+        if y >= 0 and field[y + 1] and field[y + 1][x + 1] ~= 0 then
+          return false
+        end
+      end
+    end
+    return true
   end
